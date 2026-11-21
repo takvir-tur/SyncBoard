@@ -74,10 +74,12 @@ jobs:
           distribution: "temurin"
           java-version: "17"
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
       - name: Install Android SDK & NDK
         run: |
           yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.3.13750724"
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.3.13750724"
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.3.13750724" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
         with:
