@@ -6,4 +6,6 @@
     <string name="scan_qr_title">Scan Cluster QR</string>
     <string name="action_sync">Sync</string>
     <string name="action_pin">Pin</string>
+    <string name="accessibility_service_label">ClipSync Auto-Sync</string>
+    <string name="accessibility_service_description">Detects copy events so ClipSync can automatically sync copied text and images to your paired devices.</string>
 </resources>

@@ -66,21 +66,53 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingHorizontal="14dp"
-                android:paddingVertical="10dp">
-
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/swShizukuAutoSync"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Zero-Tap Auto-Sync (Shizuku)" />
+                android:padding="14dp">
 
                 <TextView
-                    android:id="@+id/tvShizukuStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Enable Seamless Auto-Sync"
+                    android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+                <TextView
+                    android:id="@+id/tvAutoSyncStatus"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Fallback: Quick Settings tile &amp; Share Sheet"
+                    android:layout_marginTop="2dp"
+                    android:text="Optional: complete both steps for zero-tap background copy sync"
                     android:textAppearance="?attr/textAppearanceBodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOverlayPermission"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="1. Allow Display Over Other Apps" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAccessibilityPermission"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="2. Enable ClipSync Accessibility" />
+
+                <TextView
+                    android:id="@+id/tvRestrictedHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Android 13+ sideloaded APK: if Accessibility is grayed out, open App Info → ⋮ (top right) → Allow restricted settings. Skipping setup keeps the Quick Settings tile &amp; Share Sheet active."
+                    android:textAppearance="?attr/textAppearanceBodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenAppInfo"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Open App Info" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

@@ -6,8 +6,10 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,16 +25,10 @@ import com.clipsync.android.databinding.ItemPinBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
-import rikka.shizuku.Shizuku
 
 class MainActivity : AppCompatActivity() {
-    companion object {
-        private const val REQUEST_CODE_SHIZUKU = 2001
-    }
-
     private lateinit var binding: ActivityMainBinding
     private lateinit var pinAdapter: PinAdapter
-    private var suppressShizukuSwitch = false
 
     private val app: ClipSyncApp
         get() = ClipSyncApp.instance
@@ -40,21 +36,6 @@ class MainActivity : AppCompatActivity() {
     private val stateListener: () -> Unit = {
         runOnUiThread { refreshUi() }
     }
-
-    private val shizukuPermissionListener =
-        Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
-            if (requestCode != REQUEST_CODE_SHIZUKU) return@OnRequestPermissionResultListener
-            val granted = grantResult == PackageManager.PERMISSION_GRANTED
-            ClipSyncApp.setShizukuEnabled(this, granted)
-            if (granted) {
-                SyncForegroundService.start(this)
-                SyncForegroundService.refreshShizuku(this)
-                Toast.makeText(this, "Shizuku zero-tap auto-sync enabled", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Shizuku permission denied — using tile/share fallback", Toast.LENGTH_SHORT).show()
-            }
-            refreshUi()
-        }
 
     private val notificationPermLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -120,6 +101,26 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        binding.btnOverlayPermission.setOnClickListener {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            startActivity(intent)
+        }
+
+        binding.btnAccessibilityPermission.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+
+        binding.btnOpenAppInfo.setOnClickListener {
+            val intent = Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:$packageName")
+            )
+            startActivity(intent)
+        }
+
         binding.btnCopyUri.setOnClickListener {
             val uri = app.getPairingUri()
             app.writeToClipboard(this, ClipSyncNative.KIND_TEXT, "text/plain", uri.toByteArray(Charsets.UTF_8))
@@ -134,27 +135,8 @@ class MainActivity : AppCompatActivity() {
             showJoinDialog()
         }
 
-        binding.swShizukuAutoSync.setOnCheckedChangeListener { _, isChecked ->
-            if (suppressShizukuSwitch) return@setOnCheckedChangeListener
-            handleShizukuToggle(isChecked)
-        }
-
-        try {
-            Shizuku.addRequestPermissionResultListener(shizukuPermissionListener)
-        } catch (_: Throwable) {
-            // Shizuku service absent; fallback remains active.
-        }
-
         ensureNotificationPermissionAndStart()
         handleIncomingDeepLink(intent)
-    }
-
-    override fun onDestroy() {
-        try {
-            Shizuku.removeRequestPermissionResultListener(shizukuPermissionListener)
-        } catch (_: Throwable) {
-        }
-        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -165,6 +147,12 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         app.addStateListener(stateListener)
+        refreshUi()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        SyncForegroundService.refreshStatus(this)
         refreshUi()
     }
 
@@ -217,61 +205,32 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun handleShizukuToggle(enabled: Boolean) {
-        if (!enabled) {
-            ClipSyncApp.setShizukuEnabled(this, false)
-            SyncForegroundService.refreshShizuku(this)
-            refreshUi()
-            return
-        }
-
-        if (!ShizukuClipboardMonitor.isShizukuAvailable()) {
-            ClipSyncApp.setShizukuEnabled(this, false)
-            Toast.makeText(
-                this,
-                "Shizuku not running — use Quick Settings tile or Share Sheet",
-                Toast.LENGTH_SHORT
-            ).show()
-            refreshUi()
-            return
-        }
-
-        if (ShizukuClipboardMonitor.hasPermission()) {
-            ClipSyncApp.setShizukuEnabled(this, true)
-            SyncForegroundService.start(this)
-            SyncForegroundService.refreshShizuku(this)
-            refreshUi()
-            return
-        }
-
-        try {
-            Shizuku.requestPermission(REQUEST_CODE_SHIZUKU)
-        } catch (_: Throwable) {
-            ClipSyncApp.setShizukuEnabled(this, false)
-            Toast.makeText(this, "Unable to request Shizuku permission", Toast.LENGTH_SHORT).show()
-            refreshUi()
-        }
-    }
-
     private fun refreshUi() {
         binding.btnToggleSync.text = if (SyncForegroundService.isRunning) "Stop Sync" else "Start Sync"
 
-        val shizukuEnabled = ClipSyncApp.isShizukuEnabled(this)
-        suppressShizukuSwitch = true
-        binding.swShizukuAutoSync.isChecked = shizukuEnabled
-        suppressShizukuSwitch = false
+        val overlayGranted = Settings.canDrawOverlays(this)
+        val accessibilityEnabled = ClipSyncAccessibilityService.isEnabled(this)
 
-        binding.tvShizukuStatus.text = when {
-            SyncForegroundService.isShizukuActive ->
-                "Active: copying text or screenshots pushes automatically"
-            shizukuEnabled && ShizukuClipboardMonitor.hasPermission() ->
-                "Ready (starts when Sync service is active)"
-            shizukuEnabled ->
-                "Waiting for Shizuku permission or service"
-            ShizukuClipboardMonitor.isShizukuAvailable() ->
-                "Shizuku detected — toggle on for zero-tap background sync"
+        binding.btnOverlayPermission.text = if (overlayGranted) {
+            "✓ 1. Display Over Other Apps"
+        } else {
+            "1. Allow Display Over Other Apps"
+        }
+        binding.btnAccessibilityPermission.text = if (accessibilityEnabled) {
+            "✓ 2. Accessibility Auto-Sync Enabled"
+        } else {
+            "2. Enable ClipSync Accessibility"
+        }
+
+        binding.tvAutoSyncStatus.text = when {
+            overlayGranted && accessibilityEnabled ->
+                "Active: copying text or screenshots syncs automatically"
+            overlayGranted ->
+                "Step 1 complete — enable ClipSync in Accessibility Settings"
+            accessibilityEnabled ->
+                "Step 2 complete — allow Display Over Other Apps"
             else ->
-                "Shizuku not detected — fallback: Quick Settings tile & Share Sheet"
+                "Optional: complete both steps for zero-tap background sync (Quick Settings tile & Share Sheet work anytime)"
         }
 
         val uri = app.getPairingUri()

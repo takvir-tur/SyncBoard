@@ -9,7 +9,6 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import androidx.core.content.FileProvider
-import org.lsposed.hiddenapibypass.HiddenApiBypass
 import java.io.File
 import java.util.concurrent.CopyOnWriteArraySet
 
@@ -21,7 +20,6 @@ class ClipSyncApp : Application() {
         private const val MAX_READ_BYTES = 16 * 1024 * 1024
         private const val PREFS_NAME = "clipsync_prefs"
         private const val KEY_AUTOSTART = "autostart_enabled"
-        private const val KEY_SHIZUKU = "shizuku_autosync_enabled"
 
         @Volatile
         lateinit var instance: ClipSyncApp
@@ -38,18 +36,6 @@ class ClipSyncApp : Application() {
                 .putBoolean(KEY_AUTOSTART, enabled)
                 .apply()
         }
-
-        fun isShizukuEnabled(context: Context): Boolean {
-            return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .getBoolean(KEY_SHIZUKU, false)
-        }
-
-        fun setShizukuEnabled(context: Context, enabled: Boolean) {
-            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .edit()
-                .putBoolean(KEY_SHIZUKU, enabled)
-                .apply()
-        }
     }
 
     @Volatile
@@ -61,17 +47,6 @@ class ClipSyncApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            try {
-                HiddenApiBypass.addHiddenApiExemptions(
-                    "Landroid/content/IClipboard",
-                    "Landroid/content/IOnPrimaryClipChangedListener",
-                    "Landroid/os/UserHandle"
-                )
-            } catch (_: Throwable) {
-                // HiddenApiBypass is only needed when optional Shizuku clipboard IPC is enabled.
-            }
-        }
         createNotificationChannel()
 
         val dataDir = File(filesDir, "clipsync")

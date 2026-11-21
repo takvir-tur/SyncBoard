@@ -13,7 +13,7 @@ Ultra-lightweight, zero-config, end-to-end encrypted shared clipboard across Win
   - Persistence: encrypted `pins.bin` + `config.bin`, C-ABI (`core/include/clipsync.h`), and Android JNI (`core/src/jni_bridge.rs`).
 - **`desktop/windows/`** — Pure Rust Win32 tray app using `AddClipboardFormatListener` (`WM_CLIPBOARDUPDATE`) on a hidden `HWND_MESSAGE` window (`0%` idle CPU), `tray-icon` with a "Start at Login" (`HKCU\...\Run`) toggle enabled on first launch, and a GDI QR pairing window.
 - **`desktop/macos/`** — Native Swift menu-bar agent (`LSUIElement = true`) bridging to `clipsync_core`, using a coalesced `DispatchSource` timer (500 ms interval, 200 ms App Nap leeway), `SMAppService.mainApp` login auto-start toggle, and `NSPopover`.
-- **`android/`** — Native Kotlin companion app with JNI bridge, `ForegroundService` (`dataSync`), `BOOT_COMPLETED` auto-start receiver, optional zero-tap Shizuku `IClipboard` background auto-sync, Quick Settings `TileService`, persistent notification **Sync** / **Pin** actions, Share Sheet (`ACTION_SEND`) receiver, translucent 30 ms `FocusCaptureActivity`, QR generation, and CameraX + MLKit QR scanner.
+- **`android/`** — Native Kotlin companion app with JNI bridge, `ForegroundService` (`dataSync`), `BOOT_COMPLETED` auto-start receiver, zero-tap `ClipSyncAccessibilityService` + 1×1 `SYSTEM_ALERT_WINDOW` background capture, Quick Settings `TileService`, persistent notification **Sync** / **Pin** actions, Share Sheet (`ACTION_SEND`) receiver, translucent 30 ms `FocusCaptureActivity`, QR generation, and CameraX + MLKit QR scanner.
 
 ## Quickstart
 

@@ -1,7 +1,6 @@
 package com.clipsync.android
 
 import android.app.Notification
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
@@ -23,14 +22,10 @@ import kotlinx.coroutines.launch
 class SyncForegroundService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 1001
-        private const val ACTION_REFRESH_SHIZUKU = "com.clipsync.android.REFRESH_SHIZUKU"
+        private const val ACTION_REFRESH_STATUS = "com.clipsync.android.REFRESH_STATUS"
 
         @Volatile
         var isRunning: Boolean = false
-            private set
-
-        @Volatile
-        var isShizukuActive: Boolean = false
             private set
 
         fun start(context: Context) {
@@ -42,39 +37,26 @@ class SyncForegroundService : Service() {
             context.stopService(Intent(context, SyncForegroundService::class.java))
         }
 
-        fun refreshShizuku(context: Context) {
+        fun refreshStatus(context: Context) {
             if (!isRunning) return
             val intent = Intent(context, SyncForegroundService::class.java).apply {
-                action = ACTION_REFRESH_SHIZUKU
+                action = ACTION_REFRESH_STATUS
             }
-            ContextCompat.startForegroundService(context, intent)
+            try {
+                ContextCompat.startForegroundService(context, intent)
+            } catch (_: Throwable) {
+                // Ignore if OS restricts starting service from background state.
+            }
         }
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var workerJob: Job? = null
-    private var shizukuMonitor: ShizukuClipboardMonitor? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         isRunning = true
-
-        if (shizukuMonitor == null) {
-            shizukuMonitor = ShizukuClipboardMonitor(this, scope) {
-                isShizukuActive = shizukuMonitor?.isAttached == true
-                updateNotification()
-                ClipSyncApp.instance.notifyStateChanged()
-            }
-        }
-
-        if (ClipSyncApp.isShizukuEnabled(this)) {
-            shizukuMonitor?.start()
-        } else {
-            shizukuMonitor?.stop()
-        }
-        isShizukuActive = shizukuMonitor?.isAttached == true
-
         val notification = buildNotification()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ServiceCompat.startForeground(
@@ -112,19 +94,10 @@ class SyncForegroundService : Service() {
 
     override fun onDestroy() {
         isRunning = false
-        isShizukuActive = false
-        shizukuMonitor?.stop()
-        shizukuMonitor = null
         workerJob?.cancel()
         scope.cancel()
         ClipSyncApp.instance.notifyStateChanged()
         super.onDestroy()
-    }
-
-    private fun updateNotification() {
-        if (!isRunning) return
-        val nm = getSystemService(NotificationManager::class.java)
-        nm?.notify(NOTIFICATION_ID, buildNotification())
     }
 
     private fun buildNotification(): Notification {
@@ -149,8 +122,8 @@ class SyncForegroundService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val statusText = if (isShizukuActive) {
-            "Shizuku auto-sync active — copies push automatically"
+        val statusText = if (ClipSyncAccessibilityService.isReady(this)) {
+            "Zero-tap auto-sync active — copies push automatically"
         } else {
             "Tap Sync or Pin to capture Android clipboard"
         }
