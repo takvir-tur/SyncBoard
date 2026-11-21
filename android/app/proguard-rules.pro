@@ -1,0 +1,6 @@
+-keep class com.clipsync.android.ClipSyncNative { *; }
+-keep class com.clipsync.android.ClipSyncNative$* { *; }
+-keep class com.clipsync.android.ShizukuClipboardMonitor { *; }
+-keep class com.clipsync.android.ShizukuClipboardMonitor$* { *; }
+-keep class rikka.shizuku.** { *; }
+-keep class org.lsposed.hiddenapibypass.** { *; }

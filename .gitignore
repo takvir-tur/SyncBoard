@@ -1,0 +1,26 @@
+# Rust / Cargo
+/target/
+**/*.rs.bk
+
+# Relay (Node / Wrangler)
+relay/node_modules/
+relay/.wrangler/
+relay/dist/
+
+# macOS Swift / Xcode / Packaging
+desktop/macos/.build/
+desktop/macos/build/
+desktop/macos/*.dmg
+desktop/macos/*.app
+
+# Android / Gradle / NDK outputs
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/src/main/jniLibs/
+
+# OS & local runtime artifacts
+.DS_Store
+*.bin
+*.tmp

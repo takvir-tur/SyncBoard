@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClipSync</string>
+    <string name="tile_label">Sync Clipboard</string>
+    <string name="share_to_clipsync">Send to ClipSync</string>
+    <string name="scan_qr_title">Scan Cluster QR</string>
+    <string name="action_sync">Sync</string>
+    <string name="action_pin">Pin</string>
+</resources>

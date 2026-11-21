@@ -1,0 +1,4 @@
+module CClipSync {
+    header "clipsync.h"
+    export *
+}
